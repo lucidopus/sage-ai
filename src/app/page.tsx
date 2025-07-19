@@ -40,14 +40,8 @@ export default function Home() {
 
   const handleViewHypotheses = () => {
     if (queryResult) {
-      // Store the result in localStorage for the hypotheses page
-      localStorage.setItem('hypothesesData', JSON.stringify({
-        hypotheses: queryResult.hypotheses,
-        originalQuery: researchGoal,
-        queryId: queryResult.query_id,
-        processingTime: queryResult.processing_time,
-        totalHypotheses: queryResult.total_hypotheses
-      }));
+      // Store the complete result in localStorage for the hypotheses page
+      localStorage.setItem('hypothesesData', JSON.stringify(queryResult));
       router.push('/hypotheses');
     }
   };
@@ -114,7 +108,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-700 font-medium">
-                  🎉 Successfully generated {queryResult.total_hypotheses} hypotheses!
+                  🎉 Successfully generated {queryResult.hypotheses.length} hypotheses!
                 </p>
                 <p className="text-green-600 text-sm mt-1">
                   Ready to explore your research possibilities

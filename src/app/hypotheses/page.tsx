@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { QueryResponse } from '../../types/api';
 
@@ -11,7 +11,164 @@ export default function HypothesesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'rank' | 'confidence' | 'novelty' | 'feasibility'>('rank');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [liveBackground, setLiveBackground] = useState(true);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
   const router = useRouter();
+
+  // Simple moving stars background
+  const startLiveBackground = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size
+    const updateCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    updateCanvasSize();
+
+    // Star system
+    const stars: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      brightness: number;
+      twinkle: number;
+      color: string;
+    }> = [];
+
+    // Initialize stars
+    for (let i = 0; i < 120; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 3 + 1,
+        brightness: Math.random() * 0.8 + 0.2,
+        twinkle: Math.random() * Math.PI * 2,
+        color: ['#ffffff', '#e0f2fe', '#f0f9ff', '#fefce8', '#f0fdf4'][Math.floor(Math.random() * 5)]
+      });
+    }
+
+    let time = 0;
+
+    const animate = () => {
+      if (!liveBackground) return;
+
+      time += 0.01;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw stars
+      stars.forEach((star, i) => {
+        // Update star position
+        star.x += star.vx;
+        star.y += star.vy;
+        star.twinkle += 0.05;
+
+        // Wrap around screen
+        if (star.x < -10) star.x = canvas.width + 10;
+        if (star.x > canvas.width + 10) star.x = -10;
+        if (star.y < -10) star.y = canvas.height + 10;
+        if (star.y > canvas.height + 10) star.y = -10;
+
+        // Calculate twinkling effect
+        const twinkleEffect = Math.sin(star.twinkle) * 0.4 + 0.6;
+        const alpha = star.brightness * twinkleEffect;
+        const size = star.size * twinkleEffect;
+
+        // Draw star glow
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = star.color;
+        ctx.fillStyle = star.color + Math.floor(alpha * 180).toString(16).padStart(2, '0');
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw star core
+        ctx.shadowBlur = 3;
+        ctx.fillStyle = star.color;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0;
+
+        // Add cross sparkle effect for larger stars
+        if (star.size > 1.5 && twinkleEffect > 0.8) {
+          ctx.strokeStyle = star.color + Math.floor(alpha * 120).toString(16).padStart(2, '0');
+          ctx.lineWidth = 1;
+          ctx.lineCap = 'round';
+          
+          const sparkleSize = size * 2;
+          
+          // Vertical line
+          ctx.beginPath();
+          ctx.moveTo(star.x, star.y - sparkleSize);
+          ctx.lineTo(star.x, star.y + sparkleSize);
+          ctx.stroke();
+          
+          // Horizontal line
+          ctx.beginPath();
+          ctx.moveTo(star.x - sparkleSize, star.y);
+          ctx.lineTo(star.x + sparkleSize, star.y);
+          ctx.stroke();
+        }
+      });
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    // Handle resize
+    const handleResize = () => {
+      updateCanvasSize();
+      // Redistribute stars on resize
+      stars.forEach(star => {
+        if (star.x > canvas.width) star.x = Math.random() * canvas.width;
+        if (star.y > canvas.height) star.y = Math.random() * canvas.height;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [liveBackground]);
+
+  // Control live background
+  useEffect(() => {
+    if (liveBackground) {
+      const cleanup = startLiveBackground();
+      return cleanup;
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      // Clear canvas
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+  }, [liveBackground, startLiveBackground]);
 
   useEffect(() => {
     const storedData = localStorage.getItem('hypothesesData');
@@ -128,6 +285,9 @@ export default function HypothesesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Live Animated Background */}
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 opacity-40" />
+
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-cyan-400/20 to-transparent rounded-full animate-pulse" />
@@ -151,12 +311,27 @@ export default function HypothesesPage() {
                 ID: {data.query_id}
               </p>
             </div>
-            <button
-              onClick={handleNewQuery}
-              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-medium py-3 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
-            >
-              New Query
-            </button>
+            <div className="text-right space-y-4">
+              <button
+                onClick={handleNewQuery}
+                className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-medium py-3 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
+              >
+                New Query
+              </button>
+              <div className="flex items-center justify-end">
+                <button
+                  onClick={() => setLiveBackground(!liveBackground)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 text-sm font-medium ${
+                    liveBackground 
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-400/50 text-cyan-300 shadow-lg shadow-cyan-500/20' 
+                      : 'bg-white/10 border border-white/20 text-white/60 hover:text-white'
+                  }`}
+                >
+                  <span className="text-lg">{liveBackground ? '✨' : '🌟'}</span>
+                  <span>Live Background</span>
+                </button>
+              </div>
+            </div>
           </div>
           
           {/* Glassmorphic Analytics Cards */}

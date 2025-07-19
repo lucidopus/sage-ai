@@ -233,9 +233,9 @@ export default function HypothesesPage() {
       case 'confidence':
         return (b.confidence_score || 0) - (a.confidence_score || 0);
       case 'novelty':
-        return (b.criterion_scores?.novelty || 0) - (a.criterion_scores?.novelty || 0);
+        return (b.novelty_score || 0) - (a.novelty_score || 0);
       case 'feasibility':
-        return (b.criterion_scores?.feasibility || 0) - (a.criterion_scores?.feasibility || 0);
+        return (b.feasibility_score || 0) - (a.feasibility_score || 0);
       default:
         return (a.rank || 999) - (b.rank || 999);
     }
@@ -447,22 +447,20 @@ export default function HypothesesPage() {
                       </p>
                       
                       {/* Quick Stats */}
-                      {hypothesis.criterion_scores && (
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-white/60">Novelty</span>
-                            <span className="text-cyan-300 font-bold">
-                              {Math.round((hypothesis.criterion_scores.novelty || 0) * 100)}%
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white/60">Feasible</span>
-                            <span className="text-purple-300 font-bold">
-                              {Math.round((hypothesis.criterion_scores.feasibility || 0) * 100)}%
-                            </span>
-                          </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-white/60">Novelty</span>
+                          <span className="text-cyan-300 font-bold">
+                            {hypothesis.novelty_score ? Math.round(hypothesis.novelty_score * 100) : '--'}%
+                          </span>
                         </div>
-                      )}
+                        <div className="flex justify-between">
+                          <span className="text-white/60">Feasible</span>
+                          <span className="text-purple-300 font-bold">
+                            {hypothesis.feasibility_score ? Math.round(hypothesis.feasibility_score * 100) : '--'}%
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   );
                 })}
@@ -533,34 +531,60 @@ export default function HypothesesPage() {
                     )}
 
                     {/* Advanced Scoring Visualization */}
-                    {currentHypothesis.criterion_scores && (
-                      <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-3xl p-8 border border-purple-400/20">
-                        <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
-                          <span className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-sm mr-3">⚡</span>
-                          Performance Metrics
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {Object.entries(currentHypothesis.criterion_scores).map(([key, value]) => {
-                            if (value === undefined) return null;
-                            const colors = {
-                              validity: 'bg-gradient-to-r from-emerald-400 to-teal-500',
-                              novelty: 'bg-gradient-to-r from-cyan-400 to-blue-500',
-                              feasibility: 'bg-gradient-to-r from-purple-400 to-pink-500',
-                              impact: 'bg-gradient-to-r from-orange-400 to-red-500',
-                              clarity: 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                            };
-                            return (
-                              <ScoreVisualization
-                                key={key}
-                                score={value}
-                                label={key.charAt(0).toUpperCase() + key.slice(1)}
-                                color={colors[key as keyof typeof colors] || 'bg-gradient-to-r from-gray-400 to-gray-500'}
-                              />
-                            );
-                          })}
-                        </div>
+                    <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-3xl p-8 border border-purple-400/20">
+                      <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
+                        <span className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-sm mr-3">⚡</span>
+                        Performance Metrics
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Backend provided scores */}
+                        {currentHypothesis.novelty_score !== undefined && (
+                          <ScoreVisualization
+                            score={currentHypothesis.novelty_score}
+                            label="Novelty"
+                            color="bg-gradient-to-r from-cyan-400 to-blue-500"
+                          />
+                        )}
+                        {currentHypothesis.feasibility_score !== undefined && (
+                          <ScoreVisualization
+                            score={currentHypothesis.feasibility_score}
+                            label="Feasibility"
+                            color="bg-gradient-to-r from-purple-400 to-pink-500"
+                          />
+                        )}
+                        {currentHypothesis.confidence_score !== undefined && (
+                          <ScoreVisualization
+                            score={currentHypothesis.confidence_score}
+                            label="Confidence"
+                            color="bg-gradient-to-r from-emerald-400 to-teal-500"
+                          />
+                        )}
+                        
+                        {/* Legacy criterion_scores for backward compatibility */}
+                        {currentHypothesis.criterion_scores && Object.entries(currentHypothesis.criterion_scores).map(([key, value]) => {
+                          if (value === undefined) return null;
+                          // Skip if we already showed these as primary scores
+                          if (key === 'novelty' && currentHypothesis.novelty_score !== undefined) return null;
+                          if (key === 'feasibility' && currentHypothesis.feasibility_score !== undefined) return null;
+                          
+                          const colors = {
+                            validity: 'bg-gradient-to-r from-emerald-400 to-teal-500',
+                            novelty: 'bg-gradient-to-r from-cyan-400 to-blue-500',
+                            feasibility: 'bg-gradient-to-r from-purple-400 to-pink-500',
+                            impact: 'bg-gradient-to-r from-orange-400 to-red-500',
+                            clarity: 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                          };
+                          return (
+                            <ScoreVisualization
+                              key={key}
+                              score={value}
+                              label={key.charAt(0).toUpperCase() + key.slice(1)}
+                              color={colors[key as keyof typeof colors] || 'bg-gradient-to-r from-gray-400 to-gray-500'}
+                            />
+                          );
+                        })}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
 
@@ -783,32 +807,69 @@ export default function HypothesesPage() {
                             </p>
                           </div>
                           
-                          {hypothesis.criterion_scores && (
-                            <div className="space-y-3">
-                              {Object.entries(hypothesis.criterion_scores).map(([key, value]) => (
-                                value !== undefined && (
-                                  <div key={key} className="flex items-center justify-between">
-                                    <span className="text-white/80 text-sm capitalize">{key}</span>
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
-                                        <div 
-                                          className={`h-full rounded-full ${
-                                            index === 0 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' :
-                                            index === 1 ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
-                                            'bg-gradient-to-r from-purple-400 to-pink-400'
-                                          }`}
-                                          style={{ width: `${value * 100}%` }}
-                                        />
-                                      </div>
-                                      <span className="text-white text-xs font-bold w-8">
-                                        {Math.round(value * 100)}%
-                                      </span>
-                                    </div>
+                          {/* Display available scores */}
+                          <div className="space-y-3">
+                            {hypothesis.novelty_score !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-white/80 text-sm">Novelty</span>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${
+                                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' :
+                                        index === 1 ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
+                                        'bg-gradient-to-r from-purple-400 to-pink-400'
+                                      }`}
+                                      style={{ width: `${hypothesis.novelty_score * 100}%` }}
+                                    />
                                   </div>
-                                )
-                              ))}
-                            </div>
-                          )}
+                                  <span className="text-white text-xs font-bold w-8">
+                                    {Math.round(hypothesis.novelty_score * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {hypothesis.feasibility_score !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-white/80 text-sm">Feasibility</span>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${
+                                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' :
+                                        index === 1 ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
+                                        'bg-gradient-to-r from-purple-400 to-pink-400'
+                                      }`}
+                                      style={{ width: `${hypothesis.feasibility_score * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-white text-xs font-bold w-8">
+                                    {Math.round(hypothesis.feasibility_score * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {hypothesis.confidence_score !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-white/80 text-sm">Confidence</span>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-16 h-2 bg-white/20 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${
+                                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' :
+                                        index === 1 ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
+                                        'bg-gradient-to-r from-purple-400 to-pink-400'
+                                      }`}
+                                      style={{ width: `${hypothesis.confidence_score * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-white text-xs font-bold w-8">
+                                    {Math.round(hypothesis.confidence_score * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -827,11 +888,8 @@ export default function HypothesesPage() {
                               <th className="text-left text-white font-semibold py-4 px-4 min-w-[200px]">Hypothesis</th>
                               <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Rank</th>
                               <th className="text-center text-white font-semibold py-4 px-3 min-w-[90px]">Final Score</th>
-                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Validity</th>
                               <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Novelty</th>
                               <th className="text-center text-white font-semibold py-4 px-3 min-w-[90px]">Feasibility</th>
-                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Impact</th>
-                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Clarity</th>
                               <th className="text-center text-white font-semibold py-4 px-3 min-w-[100px]">Confidence</th>
                             </tr>
                           </thead>
@@ -883,31 +941,40 @@ export default function HypothesesPage() {
                                     )}
                                   </div>
                                 </td>
-                                {['validity', 'novelty', 'feasibility', 'impact', 'clarity'].map((criterion) => (
-                                  <td key={criterion} className="text-center py-4 px-3">
-                                    <div className="flex flex-col items-center space-y-1">
-                                      <span className="text-white/90 text-sm font-medium">
-                                        {hypothesis.criterion_scores?.[criterion as keyof typeof hypothesis.criterion_scores] 
-                                          ? Math.round((hypothesis.criterion_scores[criterion as keyof typeof hypothesis.criterion_scores] || 0) * 100) 
-                                          : '--'}%
-                                      </span>
-                                      {hypothesis.criterion_scores?.[criterion as keyof typeof hypothesis.criterion_scores] && (
-                                        <div className="w-10 h-1 bg-white/20 rounded-full overflow-hidden">
-                                          <div 
-                                            className={`h-full rounded-full ${
-                                              criterion === 'validity' ? 'bg-gradient-to-r from-emerald-400 to-green-400' :
-                                              criterion === 'novelty' ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
-                                              criterion === 'feasibility' ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
-                                              criterion === 'impact' ? 'bg-gradient-to-r from-orange-400 to-red-400' :
-                                              'bg-gradient-to-r from-yellow-400 to-orange-400'
-                                            }`}
-                                            style={{ width: `${(hypothesis.criterion_scores[criterion as keyof typeof hypothesis.criterion_scores] || 0) * 100}%` }}
-                                          />
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                ))}
+                                <td className="text-center py-4 px-3">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <span className="text-white/90 text-sm font-medium">
+                                      {hypothesis.novelty_score 
+                                        ? Math.round(hypothesis.novelty_score * 100) 
+                                        : '--'}%
+                                    </span>
+                                    {hypothesis.novelty_score && (
+                                      <div className="w-10 h-1 bg-white/20 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full"
+                                          style={{ width: `${hypothesis.novelty_score * 100}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="text-center py-4 px-3">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <span className="text-white/90 text-sm font-medium">
+                                      {hypothesis.feasibility_score 
+                                        ? Math.round(hypothesis.feasibility_score * 100) 
+                                        : '--'}%
+                                    </span>
+                                    {hypothesis.feasibility_score && (
+                                      <div className="w-10 h-1 bg-white/20 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
+                                          style={{ width: `${hypothesis.feasibility_score * 100}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="text-center py-4 px-3">
                                   <div className="flex flex-col items-center space-y-1">
                                     <span className="text-white/90 text-sm font-medium">

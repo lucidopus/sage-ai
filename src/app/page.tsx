@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '../services/api';
-import { QueryResponse } from '../types/api';
+import { QueryResponse, ErrorResponse } from '../types/api';
 
 export default function Home() {
   const [researchGoal, setResearchGoal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [showViewButton, setShowViewButton] = useState(false);
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [liveBackground, setLiveBackground] = useState(true);
@@ -158,33 +159,66 @@ export default function Home() {
     
     if (!researchGoal.trim()) {
       setError('Please enter a research goal');
+      setErrorDetails(null);
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setErrorDetails(null);
     setShowViewButton(false);
+    setQueryResult(null);
 
     try {
       const result = await apiService.submitResearchQuery(researchGoal, maxHypotheses);
+      
+      // Handle null/undefined response
+      if (!result) {
+        throw new Error('No response received from server');
+      }
+
+      // Validate required fields exist
+      if (!result.hypotheses || !Array.isArray(result.hypotheses)) {
+        throw new Error('Invalid response: missing or invalid hypotheses data');
+      }
+
       setQueryResult(result);
       setShowViewButton(true);
       console.log('Research query successful:', result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while processing your request');
       console.error('Research query failed:', err);
+      
+      // Handle structured error response
+      if (err && typeof err === 'object' && 'error' in err) {
+        const errorResponse = err as ErrorResponse;
+        setError(errorResponse.error || 'An error occurred while processing your request');
+        setErrorDetails(errorResponse.details || null);
+      } else if (err instanceof Error) {
+        setError(err.message);
+        setErrorDetails(null);
+      } else {
+        setError('An unexpected error occurred while processing your request');
+        setErrorDetails(null);
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
-  
 
   const handleViewHypotheses = () => {
     if (queryResult) {
       localStorage.setItem('hypothesesData', JSON.stringify(queryResult));
       router.push('/hypotheses');
     }
+  };
+
+  // Format processing time for display
+  const formatProcessingTime = (seconds: number): string => {
+    if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
   };
 
   return (
@@ -326,12 +360,24 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Error Message */}
+                {/* Error Message with Details */}
                 {error && (
                   <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-400/30 rounded-2xl p-6 backdrop-blur-sm">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">⚠️</span>
-                      <p className="text-red-200 font-medium">{error}</p>
+                    <div className="flex items-start space-x-3">
+                      <span className="text-2xl mt-1 flex-shrink-0">⚠️</span>
+                      <div className="flex-1">
+                        <p className="text-red-200 font-medium">{error}</p>
+                        {errorDetails && (
+                          <details className="mt-3">
+                            <summary className="text-red-300 text-sm cursor-pointer hover:text-red-200 transition-colors">
+                              Show error details
+                            </summary>
+                            <div className="mt-2 p-3 bg-red-500/10 rounded-lg border border-red-400/20">
+                              <p className="text-red-300 text-sm font-mono whitespace-pre-wrap">{errorDetails}</p>
+                            </div>
+                          </details>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -362,43 +408,147 @@ export default function Home() {
                 </button>
               </form>
 
-              {/* Success Message & View Button */}
+              {/* Enhanced Success Message & Results Preview */}
               {showViewButton && queryResult && (
-                <div className="mt-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 rounded-2xl p-6 backdrop-blur-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-4xl">🎉</span>
-                      <div>
-                        <p className="text-emerald-200 font-bold text-lg">
-                          Successfully generated {queryResult.hypotheses.length} hypotheses!
-                        </p>
-                        <p className="text-emerald-300/80 text-sm mt-1">
-                          Ready to explore your research possibilities
-                        </p>
+                <div className="mt-8 space-y-6">
+                  {/* Main Success Card */}
+                  <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 rounded-2xl p-6 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <span className="text-4xl">🎉</span>
+                        <div>
+                          <p className="text-emerald-200 font-bold text-lg">
+                            Successfully generated {queryResult.hypotheses?.length || 0} hypotheses!
+                          </p>
+                          <p className="text-emerald-300/80 text-sm mt-1">
+                            Ready to explore your research possibilities
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleViewHypotheses}
+                        className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-emerald-500/25 flex items-center space-x-2"
+                      >
+                        <span>View Hypotheses</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Processing Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-emerald-500/10 rounded-lg p-3 border border-emerald-400/20">
+                        <div className="text-emerald-300 text-sm">Query ID</div>
+                        <div className="text-emerald-100 font-mono text-xs mt-1 truncate" title={queryResult.query_id}>
+                          {queryResult.query_id || 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-emerald-500/10 rounded-lg p-3 border border-emerald-400/20">
+                        <div className="text-emerald-300 text-sm">Processing Time</div>
+                        <div className="text-emerald-100 font-bold">
+                          {queryResult.total_processing_time ? formatProcessingTime(queryResult.total_processing_time) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-emerald-500/10 rounded-lg p-3 border border-emerald-400/20">
+                        <div className="text-emerald-300 text-sm">Processing Steps</div>
+                        <div className="text-emerald-100 font-bold">
+                          {queryResult.processing_steps?.length || 0} steps
+                        </div>
                       </div>
                     </div>
-                    <button
-                      onClick={handleViewHypotheses}
-                      className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-emerald-500/25 flex items-center space-x-2"
-                    >
-                      <span>View Hypotheses</span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
                   </div>
+
+                  {/* Summary Card */}
+                  {queryResult.summary && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <span className="text-2xl">📊</span>
+                        <h3 className="text-white font-bold text-lg">Research Summary</h3>
+                      </div>
+                      <p className="text-white/80 leading-relaxed">{queryResult.summary}</p>
+                    </div>
+                  )}
+
+                  {/* Recommendations Card */}
+                  {queryResult.recommendations && queryResult.recommendations.length > 0 && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <span className="text-2xl">💡</span>
+                        <h3 className="text-white font-bold text-lg">Research Recommendations</h3>
+                      </div>
+                      <ul className="space-y-3">
+                        {queryResult.recommendations.map((recommendation, index) => (
+                          <li key={index} className="flex items-start space-x-3">
+                            <span className="text-cyan-400 font-bold text-sm mt-1 flex-shrink-0">
+                              {index + 1}.
+                            </span>
+                            <span className="text-white/80 leading-relaxed">{recommendation}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Hypotheses Preview */}
+                  {queryResult.hypotheses && queryResult.hypotheses.length > 0 && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">🧬</span>
+                          <h3 className="text-white font-bold text-lg">Hypotheses Preview</h3>
+                        </div>
+                        <span className="text-white/60 text-sm">
+                          {queryResult.hypotheses.length} hypotheses generated
+                        </span>
+                      </div>
+                      <div className="grid gap-3">
+                        {queryResult.hypotheses.slice(0, 2).map((hypothesis, index) => (
+                          <div key={hypothesis.id || index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="text-white font-semibold text-sm leading-tight flex-1 mr-3">
+                                {hypothesis.title || `Hypothesis ${index + 1}`}
+                              </h4>
+                              <div className="flex space-x-2 flex-shrink-0">
+                                {hypothesis.novelty_score !== undefined && (
+                                  <span className="bg-cyan-500/20 text-cyan-300 text-xs px-2 py-1 rounded-full">
+                                    N: {(hypothesis.novelty_score * 100).toFixed(0)}%
+                                  </span>
+                                )}
+                                {hypothesis.feasibility_score !== undefined && (
+                                  <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">
+                                    F: {(hypothesis.feasibility_score * 100).toFixed(0)}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-white/70 text-sm leading-relaxed line-clamp-2">
+                              {hypothesis.description || 'No description available'}
+                            </p>
+                          </div>
+                        ))}
+                        {queryResult.hypotheses.length > 2 && (
+                          <div className="text-center">
+                            <span className="text-white/60 text-sm">
+                              +{queryResult.hypotheses.length - 2} more hypotheses...
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Footer */}
               <div className="mt-8 text-center">
-                                 <p className="text-white/60 text-sm flex items-center justify-center space-x-2">
-                   <span>⚡ Powered by Advanced AI</span>
-                   <span>•</span>
-                   <span>🧬 Generate 1-10 research hypotheses</span>
-                   <span>•</span>
-                   <span>🚀 Customizable results</span>
-                 </p>
+                <p className="text-white/60 text-sm flex items-center justify-center space-x-2">
+                  <span>⚡ Powered by Advanced AI</span>
+                  <span>•</span>
+                  <span>🧬 Generate 1-10 research hypotheses</span>
+                  <span>•</span>
+                  <span>🚀 Customizable results</span>
+                </p>
               </div>
             </div>
           </div>

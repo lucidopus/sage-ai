@@ -1,5 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from '../config/api';
-import { ResearchQuery, QueryResponse, ApiError } from '../types/api';
+import { QueryRequest, QueryResponse, ErrorResponse } from '../types/api';
 
 class ApiService {
   private get baseUrl(): string {
@@ -34,11 +34,37 @@ class ApiService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        // Try to parse structured error response
+        try {
+          const errorData = await response.json();
+          
+          // Check if it's a structured ErrorResponse
+          if (errorData && typeof errorData === 'object' && 'error' in errorData) {
+            const errorResponse: ErrorResponse = {
+              error: errorData.error || `HTTP ${response.status}`,
+              error_code: errorData.error_code || response.status.toString(),
+              details: errorData.details || `Request failed with status ${response.status}`
+            };
+            throw errorResponse;
+          } else {
+            // Fallback for non-structured errors
+            throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, fallback to text
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
       }
 
-      return await response.json();
+      const data = await response.json();
+      
+      // Validate that we received valid data
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+
+      return data;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -46,7 +72,7 @@ class ApiService {
   }
 
   async submitResearchQuery(query: string, maxHypotheses: number = 5): Promise<QueryResponse> {
-    const payload: ResearchQuery = {
+    const payload: QueryRequest = {
       query,
       max_hypotheses: maxHypotheses,
     };
@@ -54,6 +80,12 @@ class ApiService {
     return this.makeRequest<QueryResponse>(API_ENDPOINTS.QUERY, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  async checkHealth(): Promise<{ status: string; version: string }> {
+    return this.makeRequest('/health', {
+      method: 'GET',
     });
   }
 

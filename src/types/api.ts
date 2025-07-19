@@ -1,55 +1,22 @@
-// API Types
-export interface ResearchQuery {
+// API Types - Updated to match backend Pydantic models exactly
+
+export interface QueryRequest {
   query: string;
   max_hypotheses: number;
-}
-
-export interface ProcessingStep {
-  step_name: string;
-  status: string;
-  start_time: string;
-  end_time: string;
-  duration_seconds: number;
-  agent_outputs: {
-    agent_name: string;
-    output: string;
-    metadata: any;
-  }[];
-}
-
-export interface ExperimentalPlan {
-  phase_1?: string;
-  phase_2?: string;
-  phase_3?: string;
-  [key: string]: string | undefined;
-}
-
-export interface ResourceRequirements {
-  personnel?: string[];
-  equipment?: string[];
-  funding?: string;
 }
 
 export interface Hypothesis {
   id: string;
   title: string;
   description: string;
-  reasoning?: string;
-  novelty_score?: number;
-  feasibility_score?: number;
-  confidence_score?: number;
-  experimental_plan?: ExperimentalPlan | string;
-  citations?: string[];
-  methodology?: string;
-  expected_outcomes?: string[];
-  resources_needed?: string[];
-  timeline_estimate?: string;
-  // New fields from the evolved response
-  original_id?: string;
-  evolution_type?: string;
-  improvements?: string[];
-  evolution_justification?: string;
-  evolution_round?: number;
+  reasoning: string;
+  novelty_score: number;
+  feasibility_score: number;
+  confidence_score: number;
+  experimental_plan: string;
+  citations: string[];
+  
+  // Optional fields that may be added during processing
   rank?: number;
   final_score?: number;
   criterion_scores?: {
@@ -61,14 +28,28 @@ export interface Hypothesis {
   };
   ranking_justification?: string;
   ranking_confidence?: number;
-  // Meta review fields
-  final_assessment?: string;
-  confidence_rating?: number;
-  resource_requirements?: ResourceRequirements;
-  timeline?: string;
-  risk_factors?: string[];
-  success_metrics?: string[];
-  collaboration_recommendations?: string[];
+  
+  // Evolution/processing metadata (optional)
+  original_id?: string;
+  evolution_type?: string;
+  improvements?: string[];
+  evolution_justification?: string;
+  evolution_round?: number;
+}
+
+export interface AgentOutput {
+  agent_name: string;
+  output: string;
+  metadata: Record<string, any>;
+}
+
+export interface ProcessingStep {
+  step_name: string;
+  status: string;
+  start_time: string; // ISO datetime string
+  end_time: string; // ISO datetime string
+  duration_seconds: number;
+  agent_outputs: AgentOutput[];
 }
 
 export interface QueryResponse {
@@ -79,6 +60,23 @@ export interface QueryResponse {
   total_processing_time: number;
   summary: string;
   recommendations: string[];
+}
+
+export interface ErrorResponse {
+  error: string;
+  error_code: string;
+  details: string;
+}
+
+export interface HealthResponse {
+  status: string;
+  version: string;
+}
+
+// Legacy types for backward compatibility (can be removed later)
+export interface ResearchQuery {
+  query: string;
+  max_hypotheses: number;
 }
 
 export interface ApiError {

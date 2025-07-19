@@ -11,7 +11,6 @@ export default function HypothesesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'rank' | 'confidence' | 'novelty' | 'feasibility'>('rank');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [liveBackground, setLiveBackground] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const router = useRouter();
@@ -30,7 +29,6 @@ export default function HypothesesPage() {
     'Feasibility Agent': 'Assesses the practical feasibility and resource requirements of hypotheses'
   };
 
-  // Simple moving stars background
   const startLiveBackground = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -74,8 +72,6 @@ export default function HypothesesPage() {
     let time = 0;
 
     const animate = () => {
-      if (!liveBackground) return;
-
       time += 0.01;
       
       // Clear canvas
@@ -161,28 +157,13 @@ export default function HypothesesPage() {
         animationRef.current = null;
       }
     };
-  }, [liveBackground]);
+  }, []);
 
-  // Control live background
+  // Control live background - always enabled
   useEffect(() => {
-    if (liveBackground) {
-      const cleanup = startLiveBackground();
-      return cleanup;
-    } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      // Clear canvas
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-      }
-    }
-  }, [liveBackground, startLiveBackground]);
+    const cleanup = startLiveBackground();
+    return cleanup;
+  }, [startLiveBackground]);
 
   useEffect(() => {
     const storedData = localStorage.getItem('hypothesesData');
@@ -332,19 +313,6 @@ export default function HypothesesPage() {
               >
                 New Query
               </button>
-              <div className="flex items-center justify-end">
-                <button
-                  onClick={() => setLiveBackground(!liveBackground)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 text-sm font-medium ${
-                    liveBackground 
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-400/50 text-cyan-300 shadow-lg shadow-cyan-500/20' 
-                      : 'bg-white/10 border border-white/20 text-white/60 hover:text-white'
-                  }`}
-                >
-                  <span className="text-lg">{liveBackground ? '✨' : '🌟'}</span>
-                  <span>Live Background</span>
-                </button>
-              </div>
             </div>
           </div>
           

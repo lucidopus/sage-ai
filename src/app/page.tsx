@@ -12,7 +12,6 @@ export default function Home() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [showViewButton, setShowViewButton] = useState(false);
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
-  const [liveBackground, setLiveBackground] = useState(true);
   const [maxHypotheses, setMaxHypotheses] = useState(5);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -59,8 +58,6 @@ export default function Home() {
     let time = 0;
 
     const animate = () => {
-      if (!liveBackground) return;
-
       time += 0.01;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -133,26 +130,12 @@ export default function Home() {
         animationRef.current = null;
       }
     };
-  }, [liveBackground]);
+  }, []);
 
   useEffect(() => {
-    if (liveBackground) {
-      const cleanup = startLiveBackground();
-      return cleanup;
-    } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-      }
-    }
-  }, [liveBackground, startLiveBackground]);
+    const cleanup = startLiveBackground();
+    return cleanup;
+  }, [startLiveBackground]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,21 +229,6 @@ export default function Home() {
                 <span className="text-cyan-300 font-semibold"> scientific hypotheses </span>
                 for you
               </p>
-            </div>
-
-            {/* Live Background Toggle */}
-            <div className="flex justify-center mb-8">
-              <button
-                onClick={() => setLiveBackground(!liveBackground)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 text-sm font-medium ${
-                  liveBackground 
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-400/50 text-cyan-300 shadow-lg shadow-cyan-500/20' 
-                    : 'bg-white/10 border border-white/20 text-white/60 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{liveBackground ? '✨' : '🌟'}</span>
-                <span>Live Background</span>
-              </button>
             </div>
 
             {/* Stats Cards */}

@@ -16,6 +16,20 @@ export default function HypothesesPage() {
   const animationRef = useRef<number | null>(null);
   const router = useRouter();
 
+  // Agent descriptions for tooltips
+  const agentDescriptions: { [key: string]: string } = {
+    'Research Agent': 'Conducts initial research and gathers relevant scientific literature and data sources',
+    'Validation Agent': 'Validates hypotheses against existing knowledge and checks for scientific consistency',
+    'Synthesis Agent': 'Synthesizes information from multiple sources to create coherent hypotheses',
+    'Ranking Agent': 'Evaluates and ranks hypotheses based on multiple criteria and scientific merit',
+    'Evolution Agent': 'Refines and evolves hypotheses through iterative improvement processes',
+    'Meta Review Agent': 'Provides final assessment and quality control of the generated hypotheses',
+    'Scoring Agent': 'Calculates detailed scores and confidence metrics for each hypothesis',
+    'Analysis Agent': 'Performs deep analysis and reasoning for hypothesis development',
+    'Literature Agent': 'Searches and analyzes relevant scientific literature and publications',
+    'Feasibility Agent': 'Assesses the practical feasibility and resource requirements of hypotheses'
+  };
+
   // Simple moving stars background
   const startLiveBackground = useCallback(() => {
     const canvas = canvasRef.current;
@@ -681,9 +695,33 @@ export default function HypothesesPage() {
                                   <span className="text-xs text-indigo-300 font-mono">
                                     {step.duration_seconds.toFixed(2)}s
                                   </span>
-                                  <span className="text-xs text-purple-300">
-                                    {step.agent_outputs.length} agents
-                                  </span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {step.agent_outputs.map((agent, agentIndex) => (
+                                      <div key={agentIndex} className="group relative">
+                                        <div className="flex items-center space-x-2 text-xs bg-purple-500/20 text-purple-200 px-3 py-1.5 rounded-full border border-purple-400/30 hover:bg-purple-500/30 hover:border-purple-400/50 transition-all duration-200">
+                                          <span className="font-medium">{agent.agent_name}</span>
+                                          {agent.metadata?.model && (
+                                            <>
+                                              <span className="text-purple-300/60">•</span>
+                                              <span className="text-purple-300/80 text-xs font-mono">
+                                                {agent.metadata.model}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Tooltip */}
+                                        {agentDescriptions[agent.agent_name] && (
+                                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                                            <div className="bg-gray-900/95 backdrop-blur-sm text-white text-xs rounded-lg px-3 py-2 shadow-xl border border-white/20 max-w-[200px] text-center">
+                                              {agentDescriptions[agent.agent_name]}
+                                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/95"></div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -773,6 +811,129 @@ export default function HypothesesPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+
+                    {/* Comprehensive Comparison Table */}
+                    <div className="bg-gradient-to-r from-slate-500/10 to-gray-500/10 backdrop-blur-sm rounded-3xl p-8 border border-white/10">
+                      <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
+                        <span className="w-8 h-8 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center text-sm mr-3">📊</span>
+                        Detailed Comparison Table
+                      </h3>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-white/20">
+                              <th className="text-left text-white font-semibold py-4 px-4 min-w-[200px]">Hypothesis</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Rank</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[90px]">Final Score</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Validity</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Novelty</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[90px]">Feasibility</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Impact</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[80px]">Clarity</th>
+                              <th className="text-center text-white font-semibold py-4 px-3 min-w-[100px]">Confidence</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.hypotheses.map((hypothesis, index) => (
+                              <tr key={hypothesis.id} 
+                                  className={`border-b border-white/10 hover:bg-white/5 transition-colors duration-200 ${
+                                    selectedHypothesis === index ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10' : ''
+                                  }`}
+                                  onClick={() => handleHypothesisSelect(index)}
+                                  style={{ cursor: 'pointer' }}>
+                                <td className="py-4 px-4">
+                                  <div className="flex items-center space-x-3">
+                                    {hypothesis.rank === 1 && <span className="text-yellow-400">🏆</span>}
+                                    <div>
+                                      <div className="font-medium text-white text-sm line-clamp-2 max-w-[180px]">
+                                        {hypothesis.title}
+                                      </div>
+                                      {hypothesis.rank && (
+                                        <div className="text-xs text-white/60 mt-1">
+                                          #{hypothesis.rank}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-center py-4 px-3">
+                                  <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${
+                                    hypothesis.rank === 1 ? 'bg-yellow-400/20 text-yellow-300 border border-yellow-400/50' :
+                                    hypothesis.rank === 2 ? 'bg-cyan-400/20 text-cyan-300 border border-cyan-400/50' :
+                                    hypothesis.rank === 3 ? 'bg-purple-400/20 text-purple-300 border border-purple-400/50' :
+                                    'bg-white/10 text-white/70 border border-white/20'
+                                  }`}>
+                                    {hypothesis.rank || index + 1}
+                                  </span>
+                                </td>
+                                <td className="text-center py-4 px-3">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <span className="text-white font-bold text-sm">
+                                      {hypothesis.final_score ? Math.round(hypothesis.final_score * 100) : '--'}%
+                                    </span>
+                                    {hypothesis.final_score && (
+                                      <div className="w-12 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full"
+                                          style={{ width: `${hypothesis.final_score * 100}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                {['validity', 'novelty', 'feasibility', 'impact', 'clarity'].map((criterion) => (
+                                  <td key={criterion} className="text-center py-4 px-3">
+                                    <div className="flex flex-col items-center space-y-1">
+                                      <span className="text-white/90 text-sm font-medium">
+                                        {hypothesis.criterion_scores?.[criterion as keyof typeof hypothesis.criterion_scores] 
+                                          ? Math.round((hypothesis.criterion_scores[criterion as keyof typeof hypothesis.criterion_scores] || 0) * 100) 
+                                          : '--'}%
+                                      </span>
+                                      {hypothesis.criterion_scores?.[criterion as keyof typeof hypothesis.criterion_scores] && (
+                                        <div className="w-10 h-1 bg-white/20 rounded-full overflow-hidden">
+                                          <div 
+                                            className={`h-full rounded-full ${
+                                              criterion === 'validity' ? 'bg-gradient-to-r from-emerald-400 to-green-400' :
+                                              criterion === 'novelty' ? 'bg-gradient-to-r from-cyan-400 to-blue-400' :
+                                              criterion === 'feasibility' ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
+                                              criterion === 'impact' ? 'bg-gradient-to-r from-orange-400 to-red-400' :
+                                              'bg-gradient-to-r from-yellow-400 to-orange-400'
+                                            }`}
+                                            style={{ width: `${(hypothesis.criterion_scores[criterion as keyof typeof hypothesis.criterion_scores] || 0) * 100}%` }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                ))}
+                                <td className="text-center py-4 px-3">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <span className="text-white/90 text-sm font-medium">
+                                      {hypothesis.confidence_score ? Math.round(hypothesis.confidence_score * 100) : '--'}%
+                                    </span>
+                                    {hypothesis.confidence_score && (
+                                      <div className="w-10 h-1 bg-white/20 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full"
+                                          style={{ width: `${hypothesis.confidence_score * 100}%` }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="mt-6 text-center">
+                        <p className="text-white/60 text-sm">
+                          💡 Click any row to view detailed information about that hypothesis
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}

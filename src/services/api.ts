@@ -24,7 +24,7 @@ class ApiService {
 
     // Add API key if available
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers['X-API-Key'] = this.apiKey;
     }
 
     try {

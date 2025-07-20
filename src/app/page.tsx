@@ -235,7 +235,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               {[
                 { icon: '🧬', label: 'AI-Generated', value: 'Hypotheses', color: 'from-cyan-400 to-blue-500' },
-                { icon: '⚡', label: 'Lightning', value: 'Fast', color: 'from-purple-400 to-pink-500' },
+                { icon: '📚', label: 'Evidence', value: 'Based', color: 'from-purple-400 to-pink-500' },
                 { icon: '🎯', label: 'Research', value: 'Focused', color: 'from-emerald-400 to-teal-500' }
               ].map((stat, index) => (
                 <div key={index} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 group">
@@ -250,6 +250,20 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Gallery Button */}
+            <div className="flex justify-center mb-8">
+              <button
+                onClick={() => router.push('/gallery')}
+                className="bg-gradient-to-r from-slate-600/20 to-slate-700/20 hover:from-slate-600/30 hover:to-slate-700/30 text-white border border-slate-500/30 hover:border-slate-400/50 font-medium py-3 px-8 rounded-2xl transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 shadow-lg backdrop-blur-sm"
+              >
+                <span className="text-xl">🖼️</span>
+                <span>Browse Previous Research</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
 

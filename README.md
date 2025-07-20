@@ -1,5 +1,7 @@
 # AI Co-Scientist Frontend
 
+DEMO:https://www.youtube.com/watch?v=-SYB2mfPJSo
+
 A modern React/Next.js frontend application for the AI Co-Scientist platform that generates scientific hypotheses from natural language research goals.
 
 ## Features

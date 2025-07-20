@@ -285,14 +285,25 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Gallery Button */}
-            <div className="flex justify-center mb-8">
+            {/* Navigation Buttons */}
+            <div className="flex justify-center space-x-4 mb-8">
               <button
                 onClick={() => router.push('/gallery')}
                 className="bg-gradient-to-r from-slate-600/20 to-slate-700/20 hover:from-slate-600/30 hover:to-slate-700/30 text-white border border-slate-500/30 hover:border-slate-400/50 font-medium py-3 px-8 rounded-2xl transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 shadow-lg backdrop-blur-sm"
               >
                 <span className="text-xl">🖼️</span>
                 <span>Browse Previous Research</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => router.push('/system-design')}
+                className="bg-gradient-to-r from-cyan-600/20 to-blue-700/20 hover:from-cyan-600/30 hover:to-blue-700/30 text-white border border-cyan-500/30 hover:border-cyan-400/50 font-medium py-3 px-8 rounded-2xl transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 shadow-lg backdrop-blur-sm"
+              >
+                <span className="text-xl">🏗️</span>
+                <span>System Design</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

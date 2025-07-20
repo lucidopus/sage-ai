@@ -15,6 +15,38 @@ export default function HypothesesPage() {
   const animationRef = useRef<number | null>(null);
   const router = useRouter();
 
+  // Helper functions
+  const formatProcessingTime = (seconds: number): string => {
+    // Debug: log the raw value
+    console.log('Raw processing time:', seconds, 'type:', typeof seconds);
+    
+    // Handle edge cases and different time units
+    if (seconds < 1) {
+      // If less than 1 second, show in milliseconds
+      return `${Math.round(seconds * 1000)}ms`;
+    }
+    
+    if (seconds < 60) {
+      // If less than 1 minute, show in seconds
+      return `${seconds.toFixed(1)}s`;
+    }
+    
+    // If 1 minute or more, show in minutes and seconds
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
+  };
+
+  const formatDescription = (description: string): string => {
+    // Clean up the description with better formatting
+    return description
+      .replace(/\*([^*]+)\*/g, '$1') // Remove asterisks but keep the text
+      .replace(/(\d+\))/g, '\n\n$1') // Add double line breaks before numbered items
+      .replace(/([.!?])\s+([A-Z])/g, '$1\n\n$2') // Add line breaks between sentences
+      .replace(/\n{3,}/g, '\n\n') // Limit consecutive line breaks
+      .trim();
+  };
+
   // Agent descriptions for tooltips
   const agentDescriptions: { [key: string]: string } = {
     'Research Agent': 'Conducts initial research and gathers relevant scientific literature and data sources',
@@ -243,28 +275,125 @@ export default function HypothesesPage() {
 
   const renderExperimentalPlan = (plan: any) => {
     if (typeof plan === 'string') {
+      // Parse string-based experimental plans with improved regex
+      const phases = [];
+      
+      // Try multiple regex patterns to handle different formats
+      let phaseRegex = /phase_(\d+):\s*([^phase_]+?)(?=phase_|$)/gi;
+      let match;
+      
+      while ((match = phaseRegex.exec(plan)) !== null) {
+        phases.push({
+          phase: `Phase ${match[1]}`,
+          description: match[2].trim()
+        });
+      }
+      
+      // If no matches found, try alternative pattern
+      if (phases.length === 0) {
+        phaseRegex = /phase\s*(\d+):\s*([^phase]+?)(?=phase|$)/gi;
+        while ((match = phaseRegex.exec(plan)) !== null) {
+          phases.push({
+            phase: `Phase ${match[1]}`,
+            description: match[2].trim()
+          });
+        }
+      }
+      
+      // If still no matches, try splitting by common patterns
+      if (phases.length === 0) {
+        const parts = plan.split(/(?:phase_|phase\s*)\d+:/i);
+        if (parts.length > 1) {
+          parts.slice(1).forEach((part, index) => {
+            phases.push({
+              phase: `Phase ${index + 1}`,
+              description: part.trim()
+            });
+          });
+        }
+      }
+      
+      // If we found structured phases, render them nicely
+      if (phases.length > 0) {
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center text-lg font-bold text-white">
+                🗺️
+              </div>
+              <h3 className="text-2xl font-semibold text-white">Research Roadmap</h3>
+            </div>
+            {phases.map((phase, index) => (
+              <div key={index} 
+                   className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group relative overflow-hidden">
+                {/* Background gradient effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-transparent to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-xl">
+                        {phase.phase}
+                      </h4>
+                      <div className="w-16 h-1 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2"></div>
+                    </div>
+                  </div>
+                  <p className="text-white/90 leading-relaxed text-lg ml-16">{phase.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      // Fallback for unstructured text with better formatting
       return (
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <p className="text-white/90 leading-relaxed">{plan}</p>
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center text-lg font-bold text-white">
+              🗺️
+            </div>
+            <h3 className="text-2xl font-semibold text-white">Research Roadmap</h3>
+          </div>
+          <div className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <p className="text-white/90 leading-relaxed text-lg">{plan}</p>
+          </div>
         </div>
       );
     }
     
     if (typeof plan === 'object' && plan) {
       return (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center text-lg font-bold text-white">
+              🗺️
+            </div>
+            <h3 className="text-2xl font-semibold text-white">Research Roadmap</h3>
+          </div>
           {Object.entries(plan).map(([phase, description], index) => (
             <div key={phase} 
-                 className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                  {index + 1}
+                 className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 group relative overflow-hidden">
+              {/* Background gradient effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-transparent to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-xl capitalize">
+                      {phase.replace('_', ' ')}
+                    </h4>
+                    <div className="w-16 h-1 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2"></div>
+                  </div>
                 </div>
-                <h4 className="font-semibold text-white capitalize text-lg">
-                  {phase.replace('_', ' ')}
-                </h4>
+                <p className="text-white/90 leading-relaxed text-lg ml-16">{String(description)}</p>
               </div>
-              <p className="text-white/80 leading-relaxed ml-11">{String(description)}</p>
             </div>
           ))}
         </div>
@@ -294,6 +423,7 @@ export default function HypothesesPage() {
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-transparent to-purple-400/10" />
           
+          
           <div className="relative z-10 flex items-center justify-between mb-8">
             <div>
               <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
@@ -320,8 +450,8 @@ export default function HypothesesPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
               { value: data.hypotheses.length, label: 'Hypotheses', icon: '🧬', color: 'from-cyan-400 to-blue-500' },
-              { value: `${(data.total_processing_time / 1000).toFixed(1)}s`, label: 'Processing', icon: '⚡', color: 'from-purple-400 to-pink-500' },
-              { value: data.hypotheses.filter(h => h.confidence_score && h.confidence_score > 0.7).length, label: 'High Confidence', icon: '🎯', color: 'from-emerald-400 to-teal-500' },
+              { value: formatProcessingTime(data.total_processing_time), label: 'Processing', icon: '⚡', color: 'from-purple-400 to-pink-500' },
+              { value: `${Math.round((data.hypotheses.reduce((sum, h) => sum + (h.confidence_score || 0), 0) / data.hypotheses.length) * 100)}%`, label: 'Avg Confidence', icon: '🎯', color: 'from-emerald-400 to-teal-500' },
               { value: data.processing_steps.length, label: 'AI Steps', icon: '🤖', color: 'from-orange-400 to-red-500' }
             ].map((stat, index) => (
               <div key={index} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 group">
@@ -411,7 +541,7 @@ export default function HypothesesPage() {
                       </h3>
                       
                       <p className="text-white/70 text-xs mb-3 line-clamp-2">
-                        {hypothesis.description.substring(0, 100)}...
+                        {hypothesis.description.replace(/\*[^*]+\*/g, '').substring(0, 100)}...
                       </p>
                       
                       {/* Quick Stats */}
@@ -485,7 +615,9 @@ export default function HypothesesPage() {
                         <span className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-sm mr-3">📝</span>
                         Description
                       </h3>
-                      <p className="text-white/90 leading-relaxed text-lg">{currentHypothesis.description}</p>
+                      <div className="text-white/90 leading-relaxed text-lg whitespace-pre-line">
+                        {formatDescription(currentHypothesis.description)}
+                      </div>
                     </div>
 
                     {currentHypothesis.reasoning && (
@@ -563,10 +695,6 @@ export default function HypothesesPage() {
                     
                     {currentHypothesis.experimental_plan && (
                       <div>
-                        <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
-                          <span className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-sm mr-3">🧪</span>
-                          Experimental Design
-                        </h3>
                         {renderExperimentalPlan(currentHypothesis.experimental_plan)}
                       </div>
                     )}
@@ -771,7 +899,7 @@ export default function HypothesesPage() {
                               {hypothesis.title}
                             </h3>
                             <p className="text-white/70 text-sm line-clamp-3">
-                              {hypothesis.description}
+                              {hypothesis.description.replace(/\*[^*]+\*/g, '')}
                             </p>
                           </div>
                           

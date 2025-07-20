@@ -221,11 +221,11 @@ export default function Home() {
           <div className="text-center mb-12">
             <div className="mb-8">
               <h1 className="text-7xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-6 leading-tight">
-                AI Co-Scientist
+                Sage AI
               </h1>
               <div className="w-32 h-1 bg-gradient-to-r from-cyan-400 to-purple-400 mx-auto rounded-full mb-6"></div>
               <p className="text-2xl text-white/80 leading-relaxed max-w-2xl mx-auto">
-                Describe your research goal and let advanced AI generate 
+                Describe your research goal and let Sage AI generate 
                 <span className="text-cyan-300 font-semibold"> scientific hypotheses </span>
                 for you
               </p>

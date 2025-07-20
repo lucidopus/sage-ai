@@ -35,6 +35,15 @@ export interface Hypothesis {
   improvements?: string[];
   evolution_justification?: string;
   evolution_round?: number;
+  
+  // Additional optional fields for enhanced features
+  resource_requirements?: {
+    personnel?: string[];
+    equipment?: string[];
+    funding?: string;
+  };
+  risk_factors?: string[];
+  success_metrics?: string[];
 }
 
 export interface AgentOutput {

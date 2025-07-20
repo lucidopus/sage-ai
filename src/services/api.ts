@@ -52,8 +52,8 @@ class ApiService {
           }
         } catch (parseError) {
           // If JSON parsing fails, fallback to text
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+
+          throw new Error(`AN ERROR OCCURED!`);
         }
       }
 

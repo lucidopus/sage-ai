@@ -393,7 +393,7 @@ export default function GalleryPage() {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRequests.map((request, index) => {
             const hypothesesCount = request.response?.hypotheses?.length || 0;
             const avgConfidence = hypothesesCount > 0 
@@ -404,22 +404,23 @@ export default function GalleryPage() {
             return (
               <div
                 key={request._id}
-                className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 hover:border-cyan-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20 overflow-hidden group cursor-pointer"
+                className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 hover:border-cyan-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20 overflow-hidden group cursor-pointer flex flex-col h-full"
                 onClick={() => openModal(request)}
               >
                 {/* Card Header */}
-                <div className="p-6 border-b border-white/10">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2">
+                <div className="p-6 flex-1 flex flex-col">
+                  {/* Header with title and actions */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-semibold text-lg mb-3 line-clamp-2 leading-tight">
                         {request.response?.original_query || request.query || 'Untitled Query'}
                       </h3>
                       <p className="text-white/60 text-sm">
                         {formatDate(request.created_at || request.timestamp)}
                       </p>
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <div className="bg-gradient-to-r from-cyan-400 to-purple-400 text-white px-3 py-1 rounded-full text-xs font-bold">
+                    <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                      <div className="bg-gradient-to-r from-cyan-400 to-purple-400 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
                         {hypothesesCount} hypotheses
                       </div>
                       <button
@@ -427,7 +428,7 @@ export default function GalleryPage() {
                           e.stopPropagation();
                           setDeleteConfirm(request._id);
                         }}
-                        className="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-200 rounded-full flex items-center justify-center transition-all duration-200 border border-red-500/30 hover:border-red-500/60 group"
+                        className="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-200 rounded-full flex items-center justify-center transition-all duration-200 border border-red-500/30 hover:border-red-500/60 group flex-shrink-0"
                         title="Delete this query"
                       >
                         <svg
@@ -448,43 +449,68 @@ export default function GalleryPage() {
 
                   {/* Top Hypothesis Preview */}
                   {topHypothesis && (
-                    <div className="bg-white/5 rounded-xl p-4 mb-4">
-                      <h4 className="text-white/90 font-medium text-sm mb-2 line-clamp-1">
-                        🏆 {topHypothesis.title}
-                      </h4>
-                      <p className="text-white/70 text-xs line-clamp-2">
-                        {topHypothesis.description.replace(/\*[^*]+\*/g, '').substring(0, 100)}...
-                      </p>
+                    <div className="bg-white/5 rounded-2xl p-4 mb-6 flex-1">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                          🏆
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white/90 font-semibold text-sm mb-2 line-clamp-1">
+                            {topHypothesis.title}
+                          </h4>
+                          <p className="text-white/70 text-xs line-clamp-3 leading-relaxed">
+                            {topHypothesis.description.replace(/\*[^*]+\*/g, '').substring(0, 120)}...
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-white/60">Confidence</span>
-                      <span className="text-cyan-300 font-bold">
-                        {Math.round(avgConfidence * 100)}%
-                      </span>
+                  <div className="grid grid-cols-2 gap-4 text-xs mb-6">
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/60">Confidence</span>
+                        <span className="text-cyan-300 font-bold">
+                          {Math.round(avgConfidence * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-1.5">
+                        <div 
+                          className="bg-gradient-to-r from-cyan-400 to-purple-400 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.round(avgConfidence * 100)}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/60">Processing</span>
-                      <span className="text-purple-300 font-bold">
-                        {formatProcessingTime(request.response?.total_processing_time || 0)}
-                      </span>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/60">Processing</span>
+                        <span className="text-purple-300 font-bold">
+                          {formatProcessingTime(request.response?.total_processing_time || 0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-1 h-1 bg-purple-400 rounded-full animate-pulse"></div>
+                        <div className="w-1 h-1 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-1 h-1 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Card Footer */}
-                <div className="p-4 bg-gradient-to-r from-white/5 to-transparent">
+                <div className="p-6 bg-gradient-to-r from-white/5 to-transparent border-t border-white/10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       viewHypotheses(request);
                     }}
-                    className="w-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/40 hover:to-purple-500/40 text-white border border-cyan-400/30 hover:border-cyan-400/60 py-2 px-4 rounded-xl transition-all duration-300 text-sm font-medium group-hover:scale-105"
+                    className="w-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/40 hover:to-purple-500/40 text-white border border-cyan-400/30 hover:border-cyan-400/60 py-3 px-6 rounded-xl transition-all duration-300 text-sm font-semibold group-hover:scale-105 flex items-center justify-center space-x-2"
                   >
-                    View Hypotheses →
+                    <span>View Hypotheses</span>
+                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -611,6 +637,12 @@ export default function GalleryPage() {
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-3 {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }

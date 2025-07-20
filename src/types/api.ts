@@ -82,6 +82,10 @@ export interface HealthResponse {
   version: string;
 }
 
+export interface SampleQueryResponse {
+  generated_query: string;
+}
+
 // Legacy types for backward compatibility (can be removed later)
 export interface ResearchQuery {
   query: string;

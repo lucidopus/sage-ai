@@ -13,6 +13,7 @@ export default function Home() {
   const [showViewButton, setShowViewButton] = useState(false);
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [maxHypotheses, setMaxHypotheses] = useState(5);
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const router = useRouter();
@@ -195,6 +196,38 @@ export default function Home() {
     }
   };
 
+  const handleGetSampleQuery = async () => {
+    setIsLoadingSample(true);
+    setError(null);
+    setErrorDetails(null);
+    
+    try {
+      const result = await apiService.getSampleQuery();
+      
+      if (result && result.generated_query) {
+        setResearchGoal(result.generated_query);
+      } else {
+        throw new Error('No sample query received from server');
+      }
+    } catch (err) {
+      console.error('Failed to get sample query:', err);
+      
+      if (err && typeof err === 'object' && 'error' in err) {
+        const errorResponse = err as ErrorResponse;
+        setError(errorResponse.error || 'Failed to get sample query');
+        setErrorDetails(errorResponse.details || null);
+      } else if (err instanceof Error) {
+        setError(err.message);
+        setErrorDetails(null);
+      } else {
+        setError('Failed to get sample query');
+        setErrorDetails(null);
+      }
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
+
   // Format processing time for display
   const formatProcessingTime = (seconds: number): string => {
     if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
@@ -274,17 +307,70 @@ export default function Home() {
             <div className="relative z-10">
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div>
-                  <label htmlFor="research-goal" className="block text-xl font-semibold text-white mb-4 flex items-center">
-                    <span className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-sm mr-3">🔬</span>
-                    Research Goal
-                  </label>
+                  <div className="flex items-center justify-between mb-4">
+                    <label htmlFor="research-goal" className="block text-xl font-semibold text-white flex items-center">
+                      <span className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full flex items-center justify-center text-sm mr-3">🔬</span>
+                      Research Goal
+                    </label>
+                    <div className="flex flex-col items-end space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleGetSampleQuery}
+                        disabled={isLoadingSample || isLoading}
+                        className="bg-gradient-to-r from-purple-500/20 via-cyan-500/20 to-purple-500/20 hover:from-purple-500/30 hover:via-cyan-500/30 hover:to-purple-500/30 disabled:from-gray-600/20 disabled:to-gray-700/20 text-white border border-purple-400/40 hover:border-cyan-400/50 disabled:border-gray-500/20 font-medium py-3 px-6 rounded-xl transition-all duration-300 flex items-center space-x-3 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 backdrop-blur-sm disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
+                      >
+                        {/* Animated background effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        {/* Subtle AI pattern overlay */}
+                        <div className="absolute inset-0 opacity-5">
+                          <div className="w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+                        </div>
+                        
+                        {isLoadingSample ? (
+                          <>
+                            <div className="relative z-10">
+                              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-r-2 border-transparent border-t-cyan-400 border-r-purple-400"></div>
+                            </div>
+                            <span className="text-sm font-semibold relative z-10">Generating...</span>
+                            <div className="flex space-x-1 relative z-10">
+                              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="relative z-10">
+                              <span className="text-xl">🤖</span>
+                            </div>
+                            <div className="flex flex-col items-start relative z-10">
+                              <span className="text-sm font-semibold text-white">Generate query</span>
+                            </div>
+                            <div className="relative z-10">
+                              <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                      
+                      {/* Model label */}
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className="text-white/60">Model:</span>
+                        <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent font-bold">Gemma 3</span>
+                        <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="relative">
                     <textarea
                       id="research-goal"
                       value={researchGoal}
                       onChange={(e) => setResearchGoal(e.target.value)}
                       placeholder="Describe your research objective in natural language. For example: 'I want to understand the relationship between social media usage and mental health in teenagers.'"
-                      className="w-full h-40 p-6 bg-white/10 border border-white/20 rounded-2xl focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 backdrop-blur-sm text-white placeholder-white/50 text-lg leading-relaxed resize-none transition-all duration-300"
+                      className="w-full h-52 p-6 bg-white/10 border border-white/20 rounded-2xl focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 backdrop-blur-sm text-white placeholder-white/50 text-lg leading-relaxed resize-none transition-all duration-300"
                       disabled={isLoading}
                     />
                     <div className="absolute bottom-4 right-4 text-white/40 text-sm">

@@ -1,5 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from '../config/api';
-import { QueryRequest, QueryResponse, ErrorResponse } from '../types/api';
+import { QueryRequest, QueryResponse, ErrorResponse, SampleQueryResponse } from '../types/api';
 
 class ApiService {
   private get baseUrl(): string {
@@ -27,11 +27,19 @@ class ApiService {
       headers['X-API-Key'] = this.apiKey;
     }
 
+    console.log('🌐 Making API request to:', url);
+    console.log('📋 Headers:', headers);
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+
 
       if (!response.ok) {
         // Try to parse structured error response
@@ -52,12 +60,27 @@ class ApiService {
           }
         } catch (parseError) {
           // If JSON parsing fails, fallback to text
-
-          throw new Error(`AN ERROR OCCURED!`);
+          const errorText = await response.text();
+          console.error('Failed to parse error response as JSON:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
       }
 
-      const data = await response.json();
+      // Get response text first to debug
+      const responseText = await response.text();
+      console.log('📄 Response text (first 500 chars):', responseText.substring(0, 500));
+      console.log('📄 Full response length:', responseText.length);
+
+      // Try to parse as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('✅ Successfully parsed JSON:', data);
+      } catch (parseError) {
+        console.error('❌ Failed to parse response as JSON:', parseError);
+        console.error('❌ Response text was:', responseText);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
       
       // Validate that we received valid data
       if (!data) {
@@ -85,6 +108,12 @@ class ApiService {
 
   async checkHealth(): Promise<{ status: string; version: string }> {
     return this.makeRequest('/health', {
+      method: 'GET',
+    });
+  }
+
+  async getSampleQuery(): Promise<SampleQueryResponse> {
+    return this.makeRequest<SampleQueryResponse>(API_ENDPOINTS.SAMPLE, {
       method: 'GET',
     });
   }
